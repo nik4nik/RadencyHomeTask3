@@ -67,14 +67,14 @@ export class NotesService {
   getStats() {
     return Array.from(new Set(this.notes.map((note) => note.category))).map(
       (e) => ({
-        [e]: this.notes.reduce(
-          (acc, note) => {
-            if (note.category === e)
-              acc[note.archived ? 'archived' : 'active']++;
-            return acc;
-          },
-          { active: 0, archived: 0 },
-        ),
+        [e]: this.notes
+          .filter((note) => note.category === e)
+          .reduce(
+            (accum, note) => (
+              accum[note.archived ? 'archived' : 'active']++, accum
+            ),
+            { active: 0, archived: 0 },
+          ),
       }),
     );
   }
