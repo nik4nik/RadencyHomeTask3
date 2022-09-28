@@ -89,15 +89,14 @@ export class NotesService {
   }
 
   remove(id: string) {
-    const e = this.notes.find((p) => p.id === id)[0],
-      idx = this.notes.findIndex(e);
-    this.notes.splice(idx, 1);
-    return e;
+    const idx = this.notes.findIndex((p) => p.id === id)
+    return idx >= 0? this.notes.splice(idx, 1): null;
   }
 
   update(id: string, noteDto: UpdateNoteDto) {
-    const e = this.notes.find((p) => p.id === id);
-    e[0] = noteDto;
-    return e[0];
+    const elt = this.notes.find((p) => p.id === id);
+	for (let prop in noteDto)
+    	elt[prop] = noteDto[prop]
+    return elt;
   }
 }
