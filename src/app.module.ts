@@ -12,7 +12,7 @@ import { NotesModule } from './notes/notes.module';
 	NotesModule,
 	SequelizeModule.forRoot({
 		dialect: 'postgres',
-		host: 'localhost',
+		host: process.env.DB_HOST,
 		port: Number(process.env.DB_PORT),
 		username: process.env.DB_USER,
 		password: process.env.DB_PASSWORD,

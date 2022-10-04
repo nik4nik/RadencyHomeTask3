@@ -28,6 +28,7 @@ export class NotesService {
       process.env.DB_PASSWORD,
       {
         dialect: 'postgres',
+        host: process.env.DB_HOST,
       },
     );
 
@@ -37,13 +38,13 @@ export class NotesService {
       .catch((err) => console.error('Connection error: ', err));
 
     return await sequelize.query(
-      `SELECT
-			category,
-			count("archived") as archived,
-			count(*) - count("archived") as active
-		FROM
-			"Notes"
-		GROUP BY
+		`select 
+			category, 
+			sum(case when archived then 1 else 0 end) as archived,
+			sum(case when archived then 0 else 1 end) as active
+		from
+			"Notes" 
+		group by
 			category`,
       {
         raw: true, //если для таблицы не определена модель

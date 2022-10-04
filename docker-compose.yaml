@@ -1,0 +1,32 @@
+version: '3.5'
+
+services:
+  main:
+    container_name: nest_sequelize_todo
+    build:
+      context: .
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - 3000:3000
+      - 9229:9229
+    command: npm run start:dev
+    depends_on:
+      - db_todo
+    restart: always
+  db_todo:
+    container_name: db_todo
+    image: postgres:14.3-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_USER=admin
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
