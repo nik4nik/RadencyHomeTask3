@@ -1,102 +1,80 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Sequelize, QueryTypes } from 'sequelize';
+
+import { Note } from './notes.model';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
 
 @Injectable()
 export class NotesService {
-  private notes = [
-    {
-      id: '1',
-      name: 'todo1',
-      content: "it's my todo1",
-      category: 'Task',
-      archived: false,
-    },
-    {
-      id: '2',
-      name: 'todo2',
-      content: "it's my todo2",
-      category: 'Task',
-      archived: false,
-    },
-    {
-      id: '3',
-      name: 'todo3',
-      content: "it's my todo3",
-      category: 'Quote',
-      archived: false,
-    },
-    {
-      id: '4',
-      name: 'todo4',
-      content: "it's my todo4",
-      category: 'Quote',
-      archived: false,
-    },
-    {
-      id: '5',
-      name: 'todo5',
-      content: "it's my todo5",
-      category: 'Random Thought',
-      archived: false,
-    },
-    {
-      id: '6',
-      name: 'todo6',
-      content: "it's my todo6",
-      category: 'Random Thought',
-      archived: true,
-    },
-    {
-      id: '7',
-      name: 'todo7',
-      content: "it's my todo7",
-      category: 'Idea',
-      archived: true,
-    },
-  ];
+  constructor(@InjectModel(Note) private noteRepository: typeof Note) {}
 
-  getAll() {
-    return this.notes;
+  async getAll() {
+    return await this.noteRepository.findAll({ include: { all: true } });
   }
 
-  getById(id: string) {
-    return this.notes.find((p) => p.id === id);
+  async getById(id: string) {
+    return await this.noteRepository.findOne({
+      where: { id },
+      include: { all: true },
+    });
   }
 
-  getStats() {
-    return Array.from(new Set(this.notes.map((note) => note.category))).map(
-      (e) => ({
-        [e]: this.notes
-          .filter((note) => note.category === e)
-          .reduce(
-            (accum, note) => (
-              accum[note.archived ? 'archived' : 'active']++, accum
-            ),
-            { active: 0, archived: 0 },
-          ),
-      }),
+  async getStats() {
+    const sequelize = new Sequelize(
+      process.env.DB_NAME,
+      process.env.DB_USER,
+      process.env.DB_PASSWORD,
+      {
+        dialect: 'postgres',
+      },
+    );
+
+    sequelize
+      .authenticate()
+      .then(() => console.log('Connected.'))
+      .catch((err) => console.error('Connection error: ', err));
+
+    return await sequelize.query(
+      `SELECT
+			category,
+			count("archived") as archived,
+			count(*) - count("archived") as active
+		FROM
+			"Notes"
+		GROUP BY
+			category`,
+      {
+        raw: true, //если для таблицы не определена модель
+        type: QueryTypes.SELECT,
+      },
     );
   }
 
-  create(noteDto: CreateNoteDto) {
-    const e = {
-      ...noteDto,
-      id: Date.now().toString(),
-    };
-    this.notes.push(e);
-    return e;
+  async create(noteDto: CreateNoteDto) {
+    return await this.noteRepository.create(noteDto);
   }
 
-  remove(id: string) {
-    const idx = this.notes.findIndex((p) => p.id === id)
-    return idx >= 0? this.notes.splice(idx, 1): null;
+  async remove(id: string) {
+    const note = await this.noteRepository
+      .findOne({ where: { id } })
+      .catch((e) => {
+        console.log(e.message);
+      });
+    if (!note) console.log('Remove error');
+    else await note.destroy();
   }
 
-  update(id: string, noteDto: UpdateNoteDto) {
-    const elt = this.notes.find((p) => p.id === id);
-	for (let prop in noteDto)
-    	elt[prop] = noteDto[prop]
-    return elt;
+  async update(id: string, noteDto: UpdateNoteDto) {
+    try {
+      await this.noteRepository.update(noteDto, { where: { id } });
+      return await this.noteRepository.findOne({
+        where: { id },
+        include: { all: true },
+      });
+    } catch (err) {
+      console.log(err);
+    }
   }
 }
