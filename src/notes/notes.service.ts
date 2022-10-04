@@ -38,11 +38,13 @@ export class NotesService {
 
     return await sequelize.query(
       `select 
-		category, 
-		sum(case when archived then 1 else 0 end) as archived,
-		sum(case when archived then 0 else 1 end) as active
-	  from "Notes" 
-	  group by category`,
+        category, 
+        sum(case when archived then 1 else 0 end) as archived,
+        sum(case when archived then 0 else 1 end) as active
+      from
+        "Notes" 
+      group by
+        category`,
       {
         raw: true, //если для таблицы не определена модель
         type: QueryTypes.SELECT,
